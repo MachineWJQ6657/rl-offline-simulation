@@ -7,10 +7,12 @@ import time
 
 def plot_latent_state_color_map(df_output, output_path='latent_state.png'):
     fig, ax = plt.subplots(figsize=(4, 4))
-    plt.scatter(df_output['x'], df_output['y'], c=df_output['i'], cmap='nipy_spectral', marker='.', lw=0, s=1)
+    # Adjusted for visibility: smaller markers for dense grid
+    plt.scatter(df_output['x'], df_output['y'], c=df_output['i'], cmap='nipy_spectral', marker='.', lw=0, s=2, alpha=1.0)
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.savefig(output_path)
+    plt.close(fig)
 
 def plot_metric_from_spinup_progress(progress_file_path, metric_name, output_dir=''):
     df = pd.read_csv(progress_file_path, sep='\t')

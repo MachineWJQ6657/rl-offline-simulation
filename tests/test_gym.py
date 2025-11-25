@@ -3,7 +3,7 @@ import gym
 import numpy as np
 
 def test_terminated():
-    env = gym.make('CartPole-v1', new_step_api=True)
+    env = gym.make('CartPole-v1')
     env.reset()
     step_result = env.step(0)
     assert len(step_result) == 5, f'Expected new gym API returning 5 elements, but got {len(step_result)}. Are you using gym package >=0.25.0?'

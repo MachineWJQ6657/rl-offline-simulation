@@ -28,7 +28,7 @@ def main():
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed, data_dir=args.output_dir)
     logger = EpochLogger(**logger_kwargs)
 
-    env = gym.make(args.env, new_step_api=True)
+    env = gym.make(args.env)
     agent = PPOAgent(
         env.observation_space,
         env.action_space,
@@ -41,7 +41,7 @@ def main():
 
     mpi_fork(args.cpu)  # run parallel code with mpi
     num_interactions = args.num_iter
-    obs = env.reset(seed=args.seed)
+    obs, _ = env.reset(seed=args.seed)
     a = agent.begin_episode(obs)
     for t in range(num_interactions):
         obs, r, terminated, truncated, _ = env.step(a)
@@ -49,7 +49,7 @@ def main():
 
         if terminated or truncated:
             agent.end_episode(r, truncated=truncated)
-            obs = env.reset(seed=args.seed)
+            obs, _ = env.reset(seed=args.seed)
             a = agent.begin_episode(obs)
 
 

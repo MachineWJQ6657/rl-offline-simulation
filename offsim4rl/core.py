@@ -47,7 +47,5 @@ class RevealedRandomnessEnv(gym.Env):
 
 class RevealedRandomnessEnvWrapper(RevealedRandomnessEnv, gym.Wrapper):
     """Wrapper for gym environments that adds an additional step_dist method."""
-    def __init__(self, env: gym.Env, new_step_api: bool = None):
-        if new_step_api is None:
-            new_step_api = env.new_step_api if hasattr(env, 'new_step_api') else False
-        super().__init__(env=env, new_step_api=new_step_api)
+    def __init__(self, env: gym.Env):
+        super().__init__(env=env)

@@ -93,8 +93,8 @@ class HOMEREncoder():
                 for key in info_dict:
                     self.tb_writer.log_scalar(key, info_dict[key])
 
-                batch_size = len(train_batch)
-                train_loss = train_loss + float(info_dict["classification_loss"]) * batch_size
+                batch_size = len(train_batch[0][0])
+                train_loss = train_loss + float(info_dict["classification_loss"].item()) * batch_size
                 # mean_entropy = mean_entropy + float(info_dict["mean_entropy"]) * batch_size
                 num_train_examples = num_train_examples + batch_size
 
@@ -108,8 +108,8 @@ class HOMEREncoder():
             with torch.no_grad():
                 for val_batch in zip(val_loader_real, val_loader_impo):
                     _, info_dict = loss_fn(self.model, val_batch, discretized=True)
-                    batch_size = len(val_batch)
-                    val_loss = val_loss + float(info_dict["classification_loss"]) * batch_size
+                    batch_size = len(val_batch[0][0])
+                    val_loss = val_loss + float(info_dict["classification_loss"].item()) * batch_size
                     num_val_examples = num_val_examples + batch_size
 
             val_loss = val_loss / float(max(1, num_val_examples))
@@ -185,9 +185,9 @@ class HOMEREncoder():
     
     def _visualize(self, fname='latent_state.png'):
         x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
-        obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, dtype=torch.float, device=self.device)
-        emb = self.encode(obs)
-        df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
+        obs_np = np.stack([x, y]).reshape((2, -1)).T
+        emb = self.encode(obs_np)
+        df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs_np)], columns=['i', 'x', 'y'])
         plot_latent_state_color_map(df_output, os.path.join(self.log_dir, 'vis', fname))
 
 

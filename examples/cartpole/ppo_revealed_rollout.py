@@ -2,9 +2,12 @@
 import argparse
 import os
 
+# Disable HDF5 file locking to avoid BlockingIOError in MPI environments
+os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
+
 import gym
 from spinup.utils.logx import EpochLogger
-from spinup.utils.mpi_tools import mpi_fork
+from spinup.utils.mpi_tools import mpi_fork, proc_id
 from spinup.utils.run_utils import setup_logger_kwargs
 
 from offsim4rl.agents.ppo import PPOAgentRevealed
@@ -18,9 +21,9 @@ def main(args):
     logger = EpochLogger(**logger_kwargs)
 
     os.makedirs(args.output_dir, exist_ok=True)
-    output_path = os.path.join(args.output_dir, f'cartpole_seed_{args.seed}_steps_{args.num_iter}.hdf5')
+    # output_path = os.path.join(args.output_dir, f'cartpole_seed_{args.seed}_steps_{args.num_iter}.hdf5')
 
-    env = gym.make(args.env, new_step_api=True)
+    env = gym.make(args.env)
     agent = PPOAgentRevealed(
         env.observation_space,
         env.action_space,
@@ -32,6 +35,9 @@ def main(args):
     )
 
     mpi_fork(args.cpu)  # run parallel code with mpi
+    
+    output_path = os.path.join(args.output_dir, f'cartpole_seed_{args.seed}_steps_{args.num_iter}_rank_{proc_id()}.hdf5')
+
     dataset = record_dataset_in_memory(
         env,
         agent,

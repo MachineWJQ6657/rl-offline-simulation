@@ -15,7 +15,7 @@ class MyGridNavi(gym.Env):
     def __init__(self, num_cells=5, num_steps=15, seed=None, discrete_observation=True):
         super().__init__()
 
-        self.seed(seed)
+        # self.seed(seed) # Deprecated in gym 0.26
         self.num_cells = num_cells
         self.num_states = num_cells ** 2
 
@@ -47,10 +47,11 @@ class MyGridNavi(gym.Env):
         # reset the goal
         self._goal = self.reset_task()
 
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
         self.step_count = 0
         self._env_state = np.array(self.starting_state)
-        return self.external_state
+        return self.external_state, {}
 
     def reset_task(self, task=None):
         if task is None:
@@ -89,7 +90,7 @@ class MyGridNavi(gym.Env):
             action = action[0]
         assert self.action_space.contains(action), str((self.action_space, action))
 
-        done = False or (self._env_state[0] == self._goal[0] and self._env_state[1] == self._goal[1])
+        terminated = False or (self._env_state[0] == self._goal[0] and self._env_state[1] == self._goal[1])
 
         # perform state transition
         old_state = copy.deepcopy(self._env_state)
@@ -97,17 +98,22 @@ class MyGridNavi(gym.Env):
 
         # check if maximum step limit is reached
         self.step_count += 1
-        if self.step_count >= self._max_episode_steps:
-            done = True
+        truncated = self.step_count >= self._max_episode_steps
 
         # compute reward
-        if done:
-            reward = 0.0
-        elif self._env_state[0] == self._goal[0] and self._env_state[1] == self._goal[1]:
+        if terminated:
             reward = 1.0
-            done = True
+        elif self._env_state[0] == self._goal[0] and self._env_state[1] == self._goal[1]:
+            # This condition is same as terminated above, but let's keep logic consistent
+            reward = 1.0
+            terminated = True
         else:
             reward = -0.1
+        
+        if truncated:
+             # If truncated, we might not want to return reward 1.0 if we just reached goal at last step?
+             # But usually terminated takes precedence for reward.
+             pass
 
         task = self.get_task()
         task_id = self.coordinate_to_id(task)
@@ -118,7 +124,7 @@ class MyGridNavi(gym.Env):
             't': self.step_count-1,
         }
         state = self.external_state
-        return state, reward, done, info
+        return state, reward, terminated, truncated, info
     
     def coordinate_to_id(self, xy):
         return int(xy[0] + self.num_cells * xy[1])
@@ -135,10 +141,10 @@ class MyGridNaviNoise(MyGridNavi):
             self._random_bits = 2
         self.nS = self.num_states * self._random_bits_multiplier
     
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         self._random_bits_rng = np.random.default_rng(seed=seed)
         self._random_bits = self._random_bits_rng.integers(self._random_bits_multiplier)
-        return super().reset()
+        return super().reset(seed=seed, options=options)
     
     def step(self, action):
         # need to draw random bits before calling superclass step where it calls external state (which uses the bits)
@@ -164,10 +170,10 @@ class MyGridNaviModuloCounter(MyGridNavi):
         self._counter_rng = np.random.default_rng(seed=seed)
         self.nS = self.num_states * self._counter_limit
     
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         self._counter_rng = np.random.default_rng(seed=seed)
         self._counter = self._counter_rng.integers(self._counter_limit)
-        return super().reset()
+        return super().reset(seed=seed, options=options)
     
     def step(self, action):
         # need to draw random bits before calling superclass step where it calls external state (which uses the bits)
@@ -192,11 +198,11 @@ class MyGridNaviCoords(MyGridNavi):
         self._deltas = np.array([0.0, 0.0])
         self.nS = self.num_states
 
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         if seed is not None:
             self._rng = np.random.default_rng(seed=seed)
         self._deltas = self._rng.uniform(-0.1, 0.1, 2)
-        return super().reset(seed=seed)
+        return super().reset(seed=seed, options=options)
     
     def step(self, action):
         self._deltas = self._rng.uniform(-0.1, 0.1, 2)
@@ -204,10 +210,10 @@ class MyGridNaviCoords(MyGridNavi):
     
     @property
     def external_state(self):
-        out = [
+        out = np.array([
             self._env_state[0] / 5 + 0.1 + self._deltas[0],
             self._env_state[1] / 5 + 0.1 + self._deltas[1],
-        ]
+        ], dtype=np.float32)
         return out
 
 class MyGridNaviHistory(MyGridNavi):
@@ -222,15 +228,15 @@ class MyGridNaviHistory(MyGridNavi):
         self.prev_actions.append(action)
         lagged_action = self.prev_actions.pop(0)
         self.lagged_state_transition(lagged_action)
-        _, reward, done, info = super().step(action)
+        _, reward, terminated, truncated, info = super().step(action)
         state = self.external_state
-        return state, reward, done, info
+        return state, reward, terminated, truncated, info
     
-    def reset(self, seed=None):
-        super().reset()
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed, options=options)
         self.prev_actions = [0] * self.action_history
         self.lagged_state = self._env_state.copy()
-        return self.external_state
+        return self.external_state, {}
     
     def lagged_state_transition(self, lagged_action):
         if lagged_action == 1:  # up

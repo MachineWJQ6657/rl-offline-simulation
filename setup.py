@@ -13,19 +13,19 @@ setuptools.setup(
     include_package_data=True,
     packages=setuptools.find_packages(include=['offsim4rl']),
     install_requires=[
-        "gym",
-        "h5py",
-        "joblib",
-        "matplotlib",
-        "seaborn",
-        "tensorboardX",
-        "torch>=1.10",
-        "tqdm"
+        "gym==0.26.2",
+        "h5py>=3.8.0",
+        "joblib>=1.2.0",
+        "matplotlib>=3.6.0",
+        "seaborn>=0.12.0",
+        "tensorboardX>=2.6",
+        "torch>=1.13.1",
+        "tqdm>=4.65.0"
     ],
     extras_require={
         'agents': [
             # Forked version of the spinup library, with simplified dependencies.
-            "spinup @ git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup"
+            # "spinup @ git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup"
         ]
     }
 )

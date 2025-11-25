@@ -46,8 +46,8 @@ def rollout(
         G = 0
         t = 0
         np.random.seed(episode)
-        env.seed(episode)
-        S = env.reset(seed=episode)
+        # env.seed(episode)
+        S, _ = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             try:
@@ -55,7 +55,8 @@ def rollout(
             except:
                 p = pi.get(tuple(S))
             A = rng.choice(env.nA, p=p)
-            S_, R, done, info = env.step(A)
+            S_, R, terminated, truncated, info = env.step(A)
+            done = terminated or truncated
             memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
             
             S = S_
@@ -112,13 +113,14 @@ def qlearn(
         G = 0
         t = 0
         np.random.seed(episode)
-        env.seed(episode)
-        S = env.reset(seed=episode)
+        # env.seed(episode)
+        S, _ = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             p = behavior_policy(Q[[S],:], dict(epsilon=epsilon_func(episode)))[0]
             A = rng.choice(env.nA, p=p)
-            S_, R, done, info = env.step(A)
+            S_, R, terminated, truncated, info = env.step(A)
+            done = terminated or truncated
             memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
             TD_errors.append(R + gamma * Q[S_].max() - Q[S,A])
             
@@ -164,13 +166,14 @@ def expSARSA(
         G = 0
         t = 0
         np.random.seed(episode)
-        env.seed(episode)
-        S = env.reset(seed=episode)
+        # env.seed(episode)
+        S, _ = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             p = pi[S]
             A = rng.choice(env.nA, p=p)
-            S_, R, done, info = env.step(A)
+            S_, R, terminated, truncated, info = env.step(A)
+            done = terminated or truncated
             memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
             TD_errors.append(R + gamma * (Q[S_] @ pi[S_]) - Q[S,A])
             
@@ -216,14 +219,15 @@ def z_expSARSA(
         G = 0
         t = 0
         np.random.seed(episode)
-        env.seed(episode)
-        S = env.reset(seed=episode)
+        # env.seed(episode)
+        S, _ = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             z = latent_state_func(S)
             p = pi[z]
             A = rng.choice(env.nA, p=p)
-            S_, R, done, info = env.step(A)
+            S_, R, terminated, truncated, info = env.step(A)
+            done = terminated or truncated
             z_ = latent_state_func(S_)
             memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
             TD_errors.append(R + gamma * Q[z_].max() - Q[z,A])
@@ -252,12 +256,13 @@ def evalMC(env, n_episodes, pi, gamma, seed=None):
     while episode < n_episodes:
         G = 0
         t = 0
-        S = env.reset(seed=episode)
+        S, _ = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             p = pi[S]
             A = rng.choice(env.nA, p=p)
-            S_, R, done, info = env.step(A)
+            S_, R, terminated, truncated, info = env.step(A)
+            done = terminated or truncated
             S = S_
             G = G + (gamma ** t) * R
             t = t + 1

@@ -15,7 +15,7 @@ from offsim4rl.encoders.homer import HOMEREncoder
 
 
 def test_cartpole_simulation():
-    env = gym.make('CartPole-v1', new_step_api=True)
+    env = gym.make('CartPole-v1')
     agent = DiscreteRandom(env.action_space)
     dataset = record_dataset_in_memory(
         env,
@@ -43,14 +43,14 @@ def test_cartpole_simulation():
     psrs = PerStateRejectionSampling(dataset, num_states=num_states, encoder=homer_encoder, new_step_api=True)
 
     simulated_steps = 0
-    obs = psrs.reset()
+    obs, _ = psrs.reset()
     while obs is not None:
         action, obs, reward, terminated, truncated, info = psrs.step_dist(get_uniform_dist(env.action_space))
         simulated_steps += 1
 
         eps_done = terminated or truncated
         if eps_done:
-            obs = psrs.reset()
+            obs, _ = psrs.reset()
 
     print(f'Simulated {simulated_steps} steps')
     assert simulated_steps > 900

@@ -10,7 +10,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         dataset: OfflineDataset,
         num_states=None,
         encoder=None,
-        new_step_api=False
+        new_step_api=True
     ):
 
         if not isinstance(dataset.observation_space, gym.spaces.Discrete) and num_states is None and encoder is None:
@@ -75,7 +75,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         return self._impl.reset_sampler(seed=seed)
 
     def reset(self, seed=None):
-        return self._impl.reset(seed=seed)
+        return self._impl.reset(seed=seed), {}
 
     def step(self, action):
         raise NotImplementedError(

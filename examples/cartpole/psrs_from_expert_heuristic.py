@@ -36,7 +36,7 @@ def main(args):
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    env = gym.make(args.env, new_step_api=True)
+    env = gym.make(args.env)
     agent = PPOAgentRevealed(
         env.observation_space,
         env.action_space,
@@ -56,7 +56,7 @@ def main(args):
     start_time = time.time()
     psrs = PerStateRejectionSampling(dataset, num_states=box_encoder.N_BOXES, encoder=box_encoder, new_step_api=True)
 
-    obs = psrs.reset()
+    obs, _ = psrs.reset()
     reward = None
     simulated_steps = 0
     steps_in_episode = 0
@@ -76,7 +76,7 @@ def main(args):
         if terminated or truncated:
             print(f'End of episode. Steps in episode: {steps_in_episode}')
             agent.end_episode(reward, truncated=truncated)
-            obs = psrs.reset()
+            obs, _ = psrs.reset()
             steps_in_episode = 0
 
     print('Simulation took: {0} minutes.'.format(str((time.time() - start_time) / 60)))
